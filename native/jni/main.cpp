@@ -22,7 +22,7 @@ using namespace std;
 int log_fd = -1;
 std::string overlay_tmpdir = "";
 
-const char *overlay_name = "overlay";
+const char *overlay_name = "magic_overlayfs";
 
 static std::vector<mount_info> collect_mounts() {
     // sort mountinfo, skip unnecessary mounts

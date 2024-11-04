@@ -102,6 +102,8 @@ fi
 
 
 "$MODDIR/overlayfs_system" "$OVERLAYMNT" | tee -a "$logfile"
+# best time here
+for i in $(grep "magic_overlayfs" /proc/mounts | cut -f2 -d " "); do /data/adb/ksu/bin/ksu_susfs add_sus_mount $i > /dev/null 2>&1 ; done &
 
 if [ ! -z "$MAGISKTMP" ]; then
     mkdir -p "$MAGISKTMP/overlayfs_mnt"
