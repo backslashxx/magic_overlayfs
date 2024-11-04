@@ -28,5 +28,5 @@ jobs:
     - name: Upload release
       uses: actions/upload-artifact@v3
       with:
-        name: magisk-overlayfs-release
+        name: magisk-overlayfs-susfs
         path: out/magisk-module
