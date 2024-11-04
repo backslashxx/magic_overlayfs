@@ -3,6 +3,7 @@
 #include "mountinfo.hpp"
 #include "utils.hpp"
 #include "partition.hpp"
+#include <cstring>
 
 using namespace std;
 
@@ -110,6 +111,7 @@ static std::string get_lowerdirs(std::vector<std::string> list, const char *sub)
 int main(int argc, const char **argv) {
     char *argv0 = strdup(argv[0]);
     const char *bname = basename(argv0);
+    char logfile[BUFSIZ];
 
     if ((strcmp(bname, "magic_remount_rw") == 0) || ((argc > 1) && (strcmp(argv[1], "--remount-rw") == 0))) {
         return do_remount(0, MS_RDONLY);
@@ -164,8 +166,12 @@ int main(int argc, const char **argv) {
         printf("This is not folder %s\n", argv[1]);
         return 1;
     }
-
-    log_fd = open("/cache/overlayfs.log", O_RDWR | O_CREAT | O_APPEND, 0666);
+    
+    
+    if(access("/cache/", W_OK) == 0) { snprintf(logfile, BUFSIZ,"/cache/overlayfs.log"); }
+    if(access("/debug_ramdisk/", W_OK) == 0) { snprintf(logfile, BUFSIZ,"/debug_ramdisk/overlayfs.log"); }
+    
+    log_fd = open(logfile, O_RDWR | O_CREAT | O_APPEND, 0666);
     LOGI("* Mount OverlayFS started\n");
     int init_mnt_ns = open("/proc/1/ns/mnt", O_RDONLY);
     if (init_mnt_ns >= 0 && setns(init_mnt_ns, 0) == 0) LOGI("Switched to init mount namespace\n");
