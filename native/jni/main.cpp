@@ -190,25 +190,6 @@ int main(int argc, const char **argv) {
     if (ksu_version >= 0) {
         LOGD("KernelSU (%d) is working\n", ksu_version);
     }
-    {
-        char buf[1024];
-        int version_fd = open("/proc/version", O_RDONLY);
-        if (read(version_fd, buf, sizeof(buf)-1) > 0) {
-            char *linux_version = strstr(buf, "Linux version ");
-            if (linux_version != nullptr) {
-                int kmajor = 0, kminor = 0;
-                sscanf(linux_version, "Linux version %d.%d", &kmajor, &kminor);
-                LOGD("Kernel version: %d.%d\n", kmajor, kminor);
-                /*
-                if (ksu_version >= 10940 && OVERLAY_MODE == 2 && kmajor >= 5 && kminor >= 9) {
-                    overlay_name = "KSU";
-                    LOGD("Enabled KernelSU auto unmount\n");
-                }
-                */
-            }
-        }
-        close(version_fd);
-    }
 
     const char *mirrors = nullptr;
     if (!str_empty(MAGISKTMP_env)) {
