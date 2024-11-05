@@ -4,9 +4,10 @@ set -o standalone
 
 chmod 777 "$MODDIR/overlayfs_system"
 
-OVERLAYDIR="/data/adb/overlay"
-OVERLAYMNT="/dev/mount_overlayfs"
-MODULEMNT="/dev/mount_loop"
+cp /data/adb/overlay /debug_ramdisk/overlay
+OVERLAYDIR="/debug_ramdisk/overlay"
+OVERLAYMNT="/debug_ramdisk/mount_overlayfs"
+MODULEMNT="/debug_ramdisk/mount_loop"
 
 # find writables
 [ -w /cache ] && logfile=/cache/overlayfs.log
@@ -45,7 +46,7 @@ loop_setup() {
 }
 
 if [ -f "$OVERLAYDIR" ]; then
-    loop_setup /data/adb/overlay
+    loop_setup $OVERLAYDIR
     if [ ! -z "$LOOPDEV" ]; then
         mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT"
         echo "magic_overlayfs: processing $OVERLAYMNT " >> /dev/kmsg #debug
