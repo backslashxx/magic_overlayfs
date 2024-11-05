@@ -10,8 +10,10 @@ OVERLAYDIR="/data/adb/overlay"
 OVERLAYMNT="/dev/mount_overlayfs"
 MODULEMNT="/dev/mount_loop"
 
+# overlay_system <writeable-dir>
+. "$MODDIR/mode.sh"
 
-mv -fT /cache/overlayfs.log /cache/overlayfs.log.bak
+# mv -fT /cache/overlayfs.log /cache/overlayfs.log.bak
 rm -rf /cache/overlayfs.log
 echo "--- Start debugging log ---" >/cache/overlayfs.log
 echo "init mount namespace: $(readlink /proc/1/ns/mnt)" >>/cache/overlayfs.log
@@ -55,10 +57,10 @@ fi
 
 num=0
 
-for i in /data/adb/modules/*; do
-    [ ! -e "$i" ] && break;
+for i in $MODULE_LIST; do
     module_name="$(basename "$i")"
-    if [ ! -e "$i/disable" ] && [ ! -e "$i/remove" ]; then
+    if [ -d "$i" ] && [ ! -e "$i/disable" ] && [ ! -e "$i/remove" ]; then
+        echo "magic_overlayfs: processing $i " >> /dev/kmsg #debug
         if [ -f "$i/overlay.img" ]; then
             loop_setup "$i/overlay.img"
             if [ ! -z "$LOOPDEV" ]; then
@@ -94,8 +96,7 @@ if [ ! -z "$OVERLAYLIST" ]; then
     echo "mount overlayfs list: [$OVERLAYLIST]" >>/cache/overlayfs.log
 fi
 
-# overlay_system <writeable-dir>
-. "$MODDIR/mode.sh"
+
 "$MODDIR/overlayfs_system" "$OVERLAYMNT" | tee -a /cache/overlayfs.log
 
 if [ ! -z "$MAGISKTMP" ]; then

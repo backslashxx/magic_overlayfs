@@ -1,3 +1,10 @@
+# tired of clearing out old overlay brah
+rm -rf /data/adb/overlay
+rm -rf /data/adb/overlay.xz
+if [ ${KSU} != true ] ; then
+	abort 'This is modified for KernelSU only. Bye.'
+fi
+
 SKIPUNZIP=1
 
 if [ "$BOOTMODE" ] && [ "$KSU" ]; then
@@ -77,6 +84,8 @@ ui_print "- Setup module"
 
 chmod 777 "$MODPATH/overlayfs_system"
 
+. $MODPATH/mode.sh
+
 resize_img() {
     e2fsck -pf "$1" || return 1
     if [ "$2" ]; then
@@ -109,9 +118,9 @@ create_ext4_image() {
 
 if [ ! -f "/data/adb/overlay" ] || ! test_mount_image; then
     rm -rf "/data/adb/overlay"
-    ui_print "- Setup 2GB ext4 image at /data/adb/overlay"
+    ui_print "- Setup ${OVERLAY_SIZE}M ext4 image at /data/adb/overlay"
     ui_print "  Please wait..."
-    if ! create_ext4_image "/data/adb/overlay" || ! resize_img "/data/adb/overlay" 2000M || ! test_mount_image; then
+    if ! create_ext4_image "/data/adb/overlay" || ! resize_img "/data/adb/overlay" "${OVERLAY_SIZE}M" || ! test_mount_image; then
         rm -rf /data/adb/overlay
         abort "! Setup ext4 image failed, abort"
     fi
