@@ -1,5 +1,3 @@
-
-
 resize_img() {
     e2fsck -pf "$1" || return 1
     if [ "$2" ]; then
@@ -53,48 +51,6 @@ create_ext4_image() {
 }
 
 support_overlayfs() {
-
-#OVERLAY_IMAGE_EXTRA - number of kb need to be added to overlay.img
-#OVERLAY_IMAGE_SHRINK - shrink overlay.img or not?
-
-if [ -d "$MODPATH/system" ]; then
-    OVERLAY_IMAGE_SIZE="$(sizeof "$MODPATH/system" "$OVERLAY_IMAGE_EXTRA")"
-    rm -rf "$MODPATH/overlay.img"
-    create_ext4_image "$MODPATH/overlay.img"
-    resize_img "$MODPATH/overlay.img" "${OVERLAY_IMAGE_SIZE}M" || { ui_print "! Setup failed"; return 1; }
-    ui_print "- Created overlay image with size: $(du -shH "$MODPATH/overlay.img" | awk '{ print $1 }')"
-    loop_setup "$MODPATH/overlay.img"
-    if [ ! -z "$LOOPDEV" ]; then
-        rm -rf "$MODPATH/overlay"
-        mkdir "$MODPATH/overlay"
-        mount -t ext4 -o rw "$LOOPDEV" "$MODPATH/overlay"
-        chcon u:object_r:system_file:s0 "$MODPATH/overlay"
-        cp -afT "$MODPATH/system" "$MODPATH/overlay/system"
-        # fix context
-        ( cd "$MODPATH" || exit 
-          find "system" | while read line; do
-            chcon "$(ls -Zd "$line" | awk '{ print $1 }')" "$MODPATH/overlay/$line"
-            if [ -e "$line/.replace" ]; then
-              setfattr -n trusted.overlay.opaque -v y "$MODPATH/overlay/$line"
-            fi
-          done
-        )
-        
-        # handle partition
-        handle vendor
-        handle product
-        handle system_ext
-        umount -l "$MODPATH/overlay"
-
-        if [ "$OVERLAY_IMAGE_SHRINK" == "true" ] || [ -z "$OVERLAY_IMAGE_SHRINK" ]; then
-          ui_print "- Shrink overlay image"
-          resize_img "$MODPATH/overlay.img"
-          ui_print "- Overlay image new size: $(du -shH "$MODPATH/overlay.img" | awk '{ print $1 }')"
-        fi
-        rm -rf "$MODPATH/overlay"
-        return 0
-    fi
-fi
-
-return 1
+	echo "This is not supported by this version."
+	return 0
 }

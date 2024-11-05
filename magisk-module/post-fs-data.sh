@@ -2,8 +2,6 @@ MODDIR="${0%/*}"
 
 set -o standalone
 
-export MAGISKTMP="$(magisk --path)"
-
 chmod 777 "$MODDIR/overlayfs_system"
 
 OVERLAYDIR="/data/adb/overlay"
@@ -50,6 +48,7 @@ if [ -f "$OVERLAYDIR" ]; then
     loop_setup /data/adb/overlay
     if [ ! -z "$LOOPDEV" ]; then
         mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT"
+        echo "magic_overlayfs: processing $OVERLAYMNT " >> /dev/kmsg #debug
         ln "$LOOPDEV" /dev/block/overlayfs_loop
     fi
 fi
@@ -65,20 +64,9 @@ for i in $MODULE_LIST; do
     module_name="$(basename "$i")"
     if [ -d "$i" ] && [ ! -e "$i/disable" ] && [ ! -e "$i/remove" ]; then
         echo "magic_overlayfs: processing $i " >> /dev/kmsg #debug
-        if [ -f "$i/overlay.img" ]; then
-            loop_setup "$i/overlay.img"
-            if [ ! -z "$LOOPDEV" ]; then
-                echo "mount overlayfs for module: $module_name" >>"$logfile"
-                mkdir -p "$MODULEMNT/$num"
-                mount -o rw -t ext4 "$LOOPDEV" "$MODULEMNT/$num"
-            fi
-            num="$((num+1))"
-        fi
-        if [ "$KSU" == "true" ]; then
-            mkdir -p "$MODULEMNT/$num"
-            mount --bind "$i" "$MODULEMNT/$num"
-            num="$((num+1))"
-        fi
+        mkdir -p "$MODULEMNT/$num"
+        mount --bind "$i" "$MODULEMNT/$num"
+        num="$((num+1))"
     fi
 done
 
@@ -100,16 +88,9 @@ if [ ! -z "$OVERLAYLIST" ]; then
     echo "mount overlayfs list: [$OVERLAYLIST]" >>"$logfile"
 fi
 
-
 "$MODDIR/overlayfs_system" "$OVERLAYMNT" | tee -a "$logfile"
 # best time here
 for i in $(grep "magic_overlayfs" /proc/mounts | cut -f2 -d " "); do /data/adb/ksu/bin/ksu_susfs add_sus_mount $i > /dev/null 2>&1 ; done &
-
-if [ ! -z "$MAGISKTMP" ]; then
-    mkdir -p "$MAGISKTMP/overlayfs_mnt"
-    mount --bind "$OVERLAYMNT" "$MAGISKTMP/overlayfs_mnt"
-fi
-
 
 umount -l "$OVERLAYMNT"
 rmdir "$OVERLAYMNT"
