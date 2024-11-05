@@ -111,6 +111,7 @@ static std::string get_lowerdirs(std::vector<std::string> list, const char *sub)
 int main(int argc, const char **argv) {
     char *argv0 = strdup(argv[0]);
     const char *bname = basename(argv0);
+    char rwdir[BUFSIZ];
     char logfile[BUFSIZ];
 
     if ((strcmp(bname, "magic_remount_rw") == 0) || ((argc > 1) && (strcmp(argv[1], "--remount-rw") == 0))) {
@@ -168,8 +169,12 @@ int main(int argc, const char **argv) {
     }
     
     
-    if(access("/cache/", W_OK) == 0) { snprintf(logfile, BUFSIZ,"/cache/overlayfs.log"); }
-    if(access("/debug_ramdisk/", W_OK) == 0) { snprintf(logfile, BUFSIZ,"/debug_ramdisk/overlayfs.log"); }
+    if(access("/dev/", W_OK) == 0) { snprintf(rwdir, BUFSIZ,"/dev/"); }
+    if(access("/tmp/", W_OK) == 0) { snprintf(rwdir, BUFSIZ,"/tmp/"); }
+    if(access("/debug_ramdisk/", W_OK) == 0) { snprintf(rwdir, BUFSIZ,"/debug_ramdisk/"); }
+    
+    strcpy(logfile, rwdir);
+    strcat(logfile, "overlayfs.log");
     
     log_fd = open(logfile, O_RDWR | O_CREAT | O_APPEND, 0666);
     LOGI("* Mount OverlayFS started\n");
@@ -209,7 +214,7 @@ int main(int argc, const char **argv) {
 
     do {
         char *random_string = random_strc(20);
-        overlay_tmpdir = std::string("/dev/.") + "worker_" + random_string;
+        overlay_tmpdir = std::string(rwdir) + "." + random_string;
         free(random_string);
     } while (mkdirs(overlay_tmpdir.data(), 750) != 0);
     std::string upper = std::string(argv[1]) + "/upper";

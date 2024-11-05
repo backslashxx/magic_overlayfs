@@ -1,76 +1,43 @@
+#!/usr/bin/env sh
 MODDIR="${0%/*}"
 
-set -o standalone
+[ -w /dev ] && master_folder=/dev
+[ -w /mnt ] && master_folder=/mnt
+[ -w /mnt/vendor ] && master_folder=/mnt/vendor
 
 chmod 777 "$MODDIR/overlayfs_system"
 
-OVERLAYDIR="/debug_ramdisk/overlay"
-OVERLAYMNT="/debug_ramdisk/mount_overlayfs"
-OVERLAYLOOP="/debug_ramdisk/overlayfs_loop"
-MODULEMNT="/debug_ramdisk/mount_loop"
 
-# find writables
-[ -w /cache ] && logfile=/cache/overlayfs.log
-[ -w /debug_ramdisk ] && logfile=/debug_ramdisk/overlayfs.log
+OVERLAYMNT="${master_folder}/mount"
+MODULEMNT="${master_folder}/module"
+node_folder="${master_folder}/node"
+mkdir -p $node_folder
+
+logfile=/debug_ramdisk/overlayfs.log
+
 
 # overlay_system <writeable-dir>
 . "$MODDIR/mode.sh"
 
-# mv -fT "$logfile" "$logfile".bak
-rm -rf "$logfile"
+
 echo "--- Start debugging log ---" >"$logfile"
 echo "init mount namespace: $(readlink /proc/1/ns/mnt)" >>"$logfile"
 echo "current mount namespace: $(readlink /proc/self/ns/mnt)" >>"$logfile"
 
-dd if=/dev/zero of="$OVERLAYDIR" bs=1M count=1 >>"$logfile" 2>&1
-/system/bin/mkfs.ext4 "$OVERLAYDIR" >>"$logfile" 2>&1
-resize2fs $OVERLAYDIR "${OVERLAY_SIZE}" >>"$logfile" 2>&1
-
 mkdir -p "$OVERLAYMNT"
-mkdir -p "$OVERLAYDIR"
 mkdir -p "$MODULEMNT"
 
-#mount -t tmpfs tmpfs "$MODULEMNT"
-
-loop_setup() {
-  unset LOOPDEV
-  local LOOP
-  local MINORX=1
-  [ -e /dev/block/loop1 ] && MINORX=$(stat -Lc '%T' /dev/block/loop1)
-  local NUM=0
-  while [ $NUM -lt 2048 ]; do
-    LOOP="/debug_ramdisk/loop${NUM}"
-    [ -e $LOOP ] || mknod $LOOP b 7 $((NUM * MINORX))
-    if losetup $LOOP "$1" 2>/dev/null; then
-      LOOPDEV=$LOOP
-      break
-    fi
-    NUM=$((NUM + 1))
-  done
-}
-
-if [ -f "$OVERLAYDIR" ]; then
-    loop_setup $OVERLAYDIR
-    if [ ! -z "$LOOPDEV" ]; then
-        mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT"
-        echo "magic_overlayfs: processing $OVERLAYMNT " >> /dev/kmsg #debug
-        ln "$LOOPDEV" "$OVERLAYLOOP"
-    fi
-fi
-
-if ! "$MODDIR/overlayfs_system" --test --check-ext4 "$OVERLAYMNT"; then
-    echo "unable to mount writeable dir" >>"$logfile"
-    exit
-fi
+mount -t tmpfs tmpfs "$MODULEMNT"
 
 num=0
 
 for i in $MODULE_LIST; do
     module_name="$(basename "$i")"
-    if [ -d "$i" ] && [ ! -e "$i/disable" ] && [ ! -e "$i/remove" ]; then
+    if [ -d "$i" ] && [ ! -e "$i/disable" ] && [ ! -e "$i/remove" ] && [ ! -e "$i/skip_mount" ]; then
         echo "magic_overlayfs: processing $i " >> /dev/kmsg #debug
         mkdir -p "$MODULEMNT/$num"
         mount --bind "$i" "$MODULEMNT/$num"
+        /data/adb/ksu/bin/ksu_susfs add_sus_mount "$MODULEMNT/$num" > /dev/null 2>&1 
         num="$((num+1))"
     fi
 done
@@ -95,12 +62,15 @@ fi
 
 "$MODDIR/overlayfs_system" "$OVERLAYMNT" | tee -a "$logfile"
 # best time here
-for i in $(grep "magic_overlayfs" /proc/mounts | cut -f2 -d " "); do /data/adb/ksu/bin/ksu_susfs add_sus_mount $i > /dev/null 2>&1 ; done &
+for i in $(grep "magic_overlayfs" /proc/mounts | cut -f2 -d " "); do /data/adb/ksu/bin/ksu_susfs add_sus_mount $i > /dev/null 2>&1 ; done
 
+# cleanup
 umount -l "$OVERLAYMNT"
-rmdir "$OVERLAYMNT"
 umount -l "$MODULEMNT"
+rmdir "$OVERLAYMNT"
 rmdir "$MODULEMNT"
+# not needed anymore
+rm -rf $OVERLAYDIR 
 
 rm -rf /dev/.overlayfs_service_unblock
 echo "--- Mountinfo (post-fs-data) ---" >>"$logfile"
@@ -114,5 +84,10 @@ cat /proc/mounts >>"$logfile"
 
     echo "--- Mountinfo (late_start) ---" >>"$logfile"
     cat /proc/mounts >>"$logfile"
+    for i in $(grep "magic_overlayfs" /proc/mounts | cut -f2 -d " "); do /data/adb/ksu/bin/ksu_susfs add_sus_mount $i > /dev/null 2>&1 ; done
+    echo "--- Mountinfo (post cleanup) ---" >>"$logfile"
+    cat /proc/mounts >>"$logfile"    
 ) &
 
+
+# EOF

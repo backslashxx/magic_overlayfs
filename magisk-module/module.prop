@@ -1,6 +1,6 @@
 id=magisk_overlayfs
-name=Magical Overlayfs Refresh
+name=Magical Overlayfs Lite
 author=HuskyDG
-version=v3.2.2+susfs 
+version=v3.2.2-lite+ 
 versionCode=30202
-description=Modified for SuSFS usage. tmpfs only
+description=Lite version to only globally mount selected modules. SuSFS supported.
