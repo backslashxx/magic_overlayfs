@@ -113,7 +113,7 @@ if [ ! -f "/data/adb/overlay" ] || ! test_mount_image; then
     rm -rf "/data/adb/overlay"
     ui_print "- Setup ${OVERLAY_SIZE}M ext4 image at /data/adb/overlay"
     ui_print "  Please wait..."
-    if ! create_ext4_image "/data/adb/overlay" || ! resize_img "/data/adb/overlay" "${OVERLAY_SIZE}M" || ! test_mount_image; then
+    if ! create_ext4_image "/data/adb/overlay" || ! resize_img "/data/adb/overlay" "${OVERLAY_SIZE}M" ; then
         rm -rf /data/adb/overlay
         abort "! Setup ext4 image failed, abort"
     fi
