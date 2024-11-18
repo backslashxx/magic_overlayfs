@@ -6,6 +6,7 @@ touch /dev/.overlayfs_service_unblock
 # unmount KSU overlay
 if [ "$DO_UNMOUNT_KSU" ]; then
     "${0%/*}/overlayfs_system" --unmount-ksu
+    for i in $(grep "magic_overlayfs" /proc/mounts | cut -f2 -d " "); do /data/adb/ksu/bin/ksu_susfs add_sus_mount $i > /dev/null 2>&1 ; done &
     stop; start
 fi
 

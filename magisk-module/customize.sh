@@ -86,54 +86,7 @@ chmod 777 "$MODPATH/overlayfs_system"
 
 . $MODPATH/mode.sh
 
-resize_img() {
-    e2fsck -pf "$1" || return 1
-    if [ "$2" ]; then
-        resize2fs "$1" "$2" || return 1
-    else
-        resize2fs -M "$1" || return 1
-    fi
-    return 0
-}
 
-test_mount_image() {
-    loop_setup /data/adb/overlay
-    [ -z "$LOOPDEV" ] && return 1
-    result_mnt=1
-    mount -t ext4 -o rw "$LOOPDEV" "$randdir" && \
-    "$MODPATH/overlayfs_system" --test --check-ext4 "$randdir" && result_mnt=0
-    # ensure that uppderdir does not override my binary
-    rm -rf "$randdir/upper/system/bin/overlayfs_system" \
-           "$randdir/upper/system/bin/magic_remount_rw" \
-           "$randdir/upper/system/bin/magic_remount_ro"
-    umount -l "$randdir"
-    return $result_mnt
-}
-
-create_ext4_image() {
-    dd if=/dev/zero of="$1" bs=1024 count=100
-    /system/bin/mkfs.ext4 "$1" && return 0
-    return 1
-}
-
-if [ ! -f "/data/adb/overlay" ] || ! test_mount_image; then
-    rm -rf "/data/adb/overlay"
-    ui_print "- Setup ${OVERLAY_SIZE}M ext4 image at /data/adb/overlay"
-    ui_print "  Please wait..."
-    if ! create_ext4_image "/data/adb/overlay" || ! resize_img "/data/adb/overlay" "${OVERLAY_SIZE}M" ; then
-        rm -rf /data/adb/overlay
-        abort "! Setup ext4 image failed, abort"
-    fi
-fi
-
-mkdir -p "$MODPATH/system/bin"
-chcon -R u:object_r:system_file:s0 "$MODPATH/system"
-chmod -R 755 "$MODPATH/system"
-
-ln "$MODPATH/overlayfs_system" "$MODPATH/system/bin"
-ln -s "./overlayfs_system" "$MODPATH/system/bin/magic_remount_rw"
-ln -s "./overlayfs_system" "$MODPATH/system/bin/magic_remount_ro"
-. "$MODPATH/util_functions.sh"
-support_overlayfs && rm -rf "$MODPATH/system"
+touch $MODPATH/skip_mount
 
 ui_print

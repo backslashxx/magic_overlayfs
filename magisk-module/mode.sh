@@ -11,10 +11,6 @@ export OVERLAY_LEGACY_MOUNT=true
 # If you are using KernelSU, set this to true to unmount KernelSU overlayfs
 export DO_UNMOUNT_KSU=true
 
-# set overlay.img size in megabytes, 500 set by default.
-# this is only on fresh install.
-export OVERLAY_SIZE=1000
-
 # list your modules that you want globally mounted
 # some examples 
 MODULE_LIST="/data/adb/modules/*"

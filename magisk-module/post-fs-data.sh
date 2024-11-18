@@ -4,9 +4,9 @@ set -o standalone
 
 chmod 777 "$MODDIR/overlayfs_system"
 
-cp /data/adb/overlay /debug_ramdisk/overlay
 OVERLAYDIR="/debug_ramdisk/overlay"
 OVERLAYMNT="/debug_ramdisk/mount_overlayfs"
+OVERLAYLOOP="/debug_ramdisk/overlayfs_loop"
 MODULEMNT="/debug_ramdisk/mount_loop"
 
 # find writables
@@ -22,11 +22,15 @@ echo "--- Start debugging log ---" >"$logfile"
 echo "init mount namespace: $(readlink /proc/1/ns/mnt)" >>"$logfile"
 echo "current mount namespace: $(readlink /proc/self/ns/mnt)" >>"$logfile"
 
+dd if=/dev/zero of="$OVERLAYDIR" bs=1M count=1 >>"$logfile" 2>&1
+/system/bin/mkfs.ext4 "$OVERLAYDIR" >>"$logfile" 2>&1
+resize2fs $OVERLAYDIR "${OVERLAY_SIZE}" >>"$logfile" 2>&1
+
 mkdir -p "$OVERLAYMNT"
 mkdir -p "$OVERLAYDIR"
 mkdir -p "$MODULEMNT"
 
-mount -t tmpfs tmpfs "$MODULEMNT"
+#mount -t tmpfs tmpfs "$MODULEMNT"
 
 loop_setup() {
   unset LOOPDEV
@@ -35,7 +39,7 @@ loop_setup() {
   [ -e /dev/block/loop1 ] && MINORX=$(stat -Lc '%T' /dev/block/loop1)
   local NUM=0
   while [ $NUM -lt 2048 ]; do
-    LOOP=/dev/block/loop$NUM
+    LOOP="/debug_ramdisk/loop${NUM}"
     [ -e $LOOP ] || mknod $LOOP b 7 $((NUM * MINORX))
     if losetup $LOOP "$1" 2>/dev/null; then
       LOOPDEV=$LOOP
@@ -50,7 +54,7 @@ if [ -f "$OVERLAYDIR" ]; then
     if [ ! -z "$LOOPDEV" ]; then
         mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT"
         echo "magic_overlayfs: processing $OVERLAYMNT " >> /dev/kmsg #debug
-        ln "$LOOPDEV" /dev/block/overlayfs_loop
+        ln "$LOOPDEV" "$OVERLAYLOOP"
     fi
 fi
 
