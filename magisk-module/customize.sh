@@ -1,10 +1,3 @@
-# tired of clearing out old overlay brah
-rm -rf /data/adb/overlay
-rm -rf /data/adb/overlay.xz
-if [ ${KSU} != true ] ; then
-	abort 'This is modified for KernelSU only. Bye.'
-fi
-
 SKIPUNZIP=1
 
 if [ "$BOOTMODE" ] && [ "$KSU" ]; then
