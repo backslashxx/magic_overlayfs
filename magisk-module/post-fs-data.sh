@@ -63,7 +63,7 @@ num=0
 
 for i in $MODULE_LIST; do
     module_name="$(basename "$i")"
-    if [ -d "$i" ] && [ ! -e "$i/disable" ] && [ ! -e "$i/remove" ]; then
+    if [ -d "$i" ] && [ ! -e "$i/disable" ] && [ ! -e "$i/remove" ]&& [ ! -e "$i/skip_mount" ]; then
         echo "magic_overlayfs: processing $i " >> /dev/kmsg #debug
         if [ -f "$i/overlay.img" ]; then
             loop_setup "$i/overlay.img"
